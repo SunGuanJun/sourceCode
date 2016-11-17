@@ -21,18 +21,18 @@ package org.apache.commons.pool;
  * An interface defining life-cycle methods for
  * instances to be served by a {@link KeyedObjectPool}.
  * <p>
- * By contract, when an {@link KeyedObjectPool}
+ * By contract, when an {@link KeyedObjectPool}   
  * delegates to a {@link KeyedPoolableObjectFactory},
  * <ol>
  *  <li>
  *   {@link #makeObject makeObject}
- *   is called whenever a new instance is needed.
+ *   is called whenever a new instance is needed.		
  *  </li>
  *  <li>
  *   {@link #activateObject activateObject}
  *   is invoked on every instance that has been
  *   {@link #passivateObject passivated} before it is
- *   {@link KeyedObjectPool#borrowObject borrowed} from the pool.
+ *   {@link KeyedObjectPool#borrowObject borrowed} from the pool.	
  *  </li>
  *  <li>
  *   {@link #validateObject validateObject}
@@ -42,7 +42,7 @@ package org.apache.commons.pool;
  *   instance being {@link KeyedObjectPool#returnObject returned} to the pool
  *   before it is {@link #passivateObject passivated}. It will only be invoked
  *   on an activated instance.
- *  </li>
+ *  </li>	
  *  <li>
  *   {@link #passivateObject passivateObject}
  *   is invoked on every instance when it is returned to the pool.
@@ -62,7 +62,7 @@ package org.apache.commons.pool;
  * an {@link KeyedObjectPool} makes is that the same instance of an object will not
  * be passed to more than one method of a <code>KeyedPoolableObjectFactory</code>
  * at a time.
- * </p>
+ * </p>		
  *
  * @param <K> the type of keys in this pool
  * @param <V> the type of objects held in this pool
@@ -73,6 +73,21 @@ package org.apache.commons.pool;
  * @author Sandy McArthur
  * @version $Revision: 1222388 $ $Date: 2011-12-22 13:28:27 -0500 (Thu, 22 Dec 2011) $
  * @since Pool 1.0
+ */
+/**
+ * 这个接口为一些可以被KeyedObjectPool所用的实例定义了生命周期方法。
+ * 按照约定，当一个KeyedObjectPool委托给一个keyedPoolableObjectFactory时，
+ * 1. 当需要新实例时，makeObject()会被调用
+ * 2. 当一个实例从对象池中被borrowed()之前，如果它是passivated，它会被activate。通过调用activateObject()
+ * 3. 可以通过调用validateObject()来确保实例可以从对象池中borrow出来；validateObject()也可以用在实例被返还到对象池中时对它进行测试；validateObject()只有在实例是活跃的时候才可以被调用。
+ * 4. passivateObject在实例被返还到对象池时被调用
+ * 5. destroyObject()会在每个实例被提出对象池时被调用（不管是因为valiateObject()的返回值，还是由于对象池的特定实现）。不保证被销毁的实例都是活跃的、不活跃的、或者某一个统一的状态。
+ * 
+ * KeyedPoolableObjectFactory必须是线程安全的。KeyedPoolableObjectFactory的任意一个方法在同一时间都不会输出两个相同的实例。
+ * @author hzsunguanjun
+ *
+ * @param <K>
+ * @param <V>
  */
 public interface KeyedPoolableObjectFactory<K, V> {
     /**
@@ -105,6 +120,17 @@ public interface KeyedPoolableObjectFactory<K, V> {
      * @see #validateObject
      * @see KeyedObjectPool#invalidateObject
      */
+    /**
+     * 销毁一个不再需要的实例
+     * 注意事项：
+     * 1. 被销毁的实例的状态无法保证；
+     * 2. 必须准备好处理一些意外的错误；
+     * 3. 同时也要考虑下垃圾回收的事。
+     * 
+     * @param key
+     * @param obj
+     * @throws Exception
+     */
     void destroyObject(K key, V obj) throws Exception;
 
     /**
@@ -115,6 +141,13 @@ public interface KeyedPoolableObjectFactory<K, V> {
      * @param obj the instance to be validated
      * @return <code>false</code> if <code>obj</code> is not valid and should
      *         be dropped from the pool, <code>true</code> otherwise.
+     */
+    /**
+     * 确保一个实例可以被安全地返还到对象池。
+     * 如果一个对象必须被销毁的话，返回false
+     * @param key
+     * @param obj
+     * @return
      */
     boolean validateObject(K key, V obj);
 

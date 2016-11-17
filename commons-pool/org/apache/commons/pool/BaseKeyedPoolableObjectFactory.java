@@ -32,6 +32,14 @@ package org.apache.commons.pool;
  * @version $Revision: 1222388 $ $Date: 2011-12-22 13:28:27 -0500 (Thu, 22 Dec 2011) $
  * @since Pool 1.0
  */
+/**
+ * KeyedPoolableObjectFactory接口的一个基本实现
+ * 这里定义的操作基本上都是空操作
+ * @author hzsunguanjun
+ *
+ * @param <K>
+ * @param <V>
+ */
 public abstract class BaseKeyedPoolableObjectFactory<K, V> implements KeyedPoolableObjectFactory<K, V> {
     /**
      * Create an instance that can be served by the pool.
@@ -39,6 +47,9 @@ public abstract class BaseKeyedPoolableObjectFactory<K, V> implements KeyedPoola
      * @param key the key used when constructing the object
      * @return an instance that can be served by the pool
      */
+	/**
+	 * 创建一个对象池可用的实例
+	 */
     public abstract V makeObject(K key)
         throws Exception;
 
@@ -50,6 +61,11 @@ public abstract class BaseKeyedPoolableObjectFactory<K, V> implements KeyedPoola
      *
      * @param key the key used when selecting the instance
      * @param obj the instance to be destroyed
+     */
+    /**
+     * 销毁一个不再被对象池需要的实例
+     * 默认实现是一个空操作
+     * ps：java中一般不会手动释放内存，如果需要销毁对象的话，应该只需要把引用置为空就行了吧
      */
     public void destroyObject(K key, V obj)
         throws Exception {
@@ -65,6 +81,11 @@ public abstract class BaseKeyedPoolableObjectFactory<K, V> implements KeyedPoola
      * @param obj the instance to be validated
      * @return always <code>true</code> in the default implementation
      */ 
+    /**
+     * 确保实例可以安全地返回对象池
+     * 默认实现永远返回true
+     * ps：这个方法一般是什么被调用？实例使用完返还对象池的时候调用吗？
+     */
     public boolean validateObject(K key, V obj) {
         return true;
     }
@@ -78,6 +99,10 @@ public abstract class BaseKeyedPoolableObjectFactory<K, V> implements KeyedPoola
      * @param key the key used when selecting the object
      * @param obj the instance to be activated
      */
+    /**
+     * 重新初始化一个返还对象池的实例
+     * 默认实现是一个空操作
+     */
     public void activateObject(K key, V obj)
         throws Exception {
     }
@@ -90,6 +115,11 @@ public abstract class BaseKeyedPoolableObjectFactory<K, V> implements KeyedPoola
      *
      * @param key the key used when selecting the object
      * @param obj the instance to be passivated
+     */
+    /**
+     * 卸载一个被返还空闲对象池的实例
+     * 默认实现是一个空操作
+     * ps：这样做的目的是什么呢？uninitialize应该是指释放资源。应该是为了节省资源吧，有些对象池是有最高负载的
      */
     public void passivateObject(K key, V obj)
         throws Exception {

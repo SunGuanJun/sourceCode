@@ -28,6 +28,12 @@ package org.apache.commons.pool;
  * @version $Revision: 1222388 $ $Date: 2011-12-22 13:28:27 -0500 (Thu, 22 Dec 2011) $
  * @since Pool 1.0
  */
+/**
+ * 一个创建ObjectPool的工厂接口
+ * @author hzsunguanjun
+ *
+ * @param <T>
+ */
 public interface ObjectPoolFactory<T> {
     /**
      * Create and return a new {@link ObjectPool}.
