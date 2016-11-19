@@ -118,6 +118,22 @@ public interface ObjectPool<T> {
      * @throws Exception when {@link PoolableObjectFactory#makeObject makeObject} throws an exception.
      * @throws NoSuchElementException when the pool is exhausted and cannot or will not return another instance.
      */
+	/**
+	 * 从对象池中获取一个对象
+	 * 
+	 * 从该方法返回的实例有两种产生方式。
+	 * 一种是通过PoolableObjectFactory的makeObject()产生的，
+	 * 另外一种是之前已经存在的空闲对象，经过activateObject()和validateObject()处理之后产生。
+	 * 
+	 * 按照约定，客户端必须通过调用returnObject()、invalidateObject()或者其他相关方法来归还借走的实例。
+	 * 
+	 * 在对象池没有空闲对象的时候，该方法的行为并没有特别规定。
+	 * 较老的版本会返回null来表明对象已经耗尽资源了，较新的版本则鼓励抛出NoSuchElementException.
+	 * @return
+	 * @throws Exception
+	 * @throws NoSuchElementException
+	 * @throws IllegalStateException
+	 */
     T borrowObject() throws Exception, NoSuchElementException, IllegalStateException;
 
     /**
@@ -129,6 +145,12 @@ public interface ObjectPool<T> {
      *
      * @param obj a {@link #borrowObject borrowed} instance to be returned.
      * @throws Exception 
+     */
+    /**
+     * 将实例返还对象池
+     * 
+     * @param obj
+     * @throws Exception
      */
     void returnObject(T obj) throws Exception;
 
@@ -145,6 +167,13 @@ public interface ObjectPool<T> {
      * @param obj a {@link #borrowObject borrowed} instance to be disposed.
      * @throws Exception
      */
+    /**
+     * 使对象池中的一个实例无效
+     * 
+     * 当一个从对象池中拿出来的实例决定被无效的时候，该方法应当被调用
+     * @param obj
+     * @throws Exception
+     */
     void invalidateObject(T obj) throws Exception;
 
     /**
@@ -156,6 +185,13 @@ public interface ObjectPool<T> {
      * @throws Exception when {@link PoolableObjectFactory#makeObject} fails.
      * @throws IllegalStateException after {@link #close} has been called on this pool.
      * @throws UnsupportedOperationException when this pool cannot add new idle objects.
+     */
+    /**
+     * 通过PoolableObjectFactory或者其他实现的相关机制创建一个对象，挂起（钝化）它，然后把它放到空闲对象池中。
+     * addObject()在将一些空闲对象预加载到一个对象池中很有用
+     * @throws Exception
+     * @throws IllegalStateException
+     * @throws UnsupportedOperationException
      */
     void addObject() throws Exception, IllegalStateException, UnsupportedOperationException;
 
@@ -170,6 +206,12 @@ public interface ObjectPool<T> {
      * @return the number of instances currently idle in this pool or a negative value if unsupported
      * @throws UnsupportedOperationException <strong>deprecated</strong>: if this implementation does not support the operation
      */
+    /**
+     * 返回对象池中当前空闲实例的数量（可选操作）
+     * 空闲：可以被borrow的
+     * @return
+     * @throws UnsupportedOperationException
+     */
     int getNumIdle() throws UnsupportedOperationException;
 
     /**
@@ -181,6 +223,11 @@ public interface ObjectPool<T> {
      * @return the number of instances currently borrowed from this pool or a negative value if unsupported
      * @throws UnsupportedOperationException <strong>deprecated</strong>: if this implementation does not support the operation
      */
+    /**
+     * 返回对象池中当前被使用的实例数量（可选操作）
+     * @return
+     * @throws UnsupportedOperationException
+     */
     int getNumActive() throws UnsupportedOperationException;
 
     /**
@@ -190,7 +237,7 @@ public interface ObjectPool<T> {
      *
      * @throws UnsupportedOperationException if this implementation does not support the operation
      */
-    //只清理空闲的对象？
+    //只清理空闲的对象？应该是，若对象是被borrowed状态，销毁它恐出错
     void clear() throws Exception, UnsupportedOperationException;
 
     /**
@@ -202,6 +249,11 @@ public interface ObjectPool<T> {
      * </p>
      *
      * @throws Exception <strong>deprecated</strong>: implementations should silently fail if not all resources can be freed.
+     */
+    /**
+     * 关闭对象池，并释放所有相关资源
+     * 关闭之后再调用addObject()、borrowObject()会抛出异常
+     * @throws Exception
      */
     void close() throws Exception;
 

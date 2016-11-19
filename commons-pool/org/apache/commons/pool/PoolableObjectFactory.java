@@ -23,17 +23,17 @@ package org.apache.commons.pool;
  * <p>
  * By contract, when an {@link ObjectPool}
  * delegates to a {@link PoolableObjectFactory},
- * <ol>
+ * <ol>按照约定，当一个ObjectPool委托给一个PoolableObjectFactory时
  *  <li>
  *   {@link #makeObject makeObject}
  *   is called whenever a new instance is needed.
- *  </li>
+ *  </li>当需要一个新的实例时需要调用makeObject()
  *  <li>
  *   {@link #activateObject activateObject}
  *   is invoked on every instance that has been
  *   {@link #passivateObject passivated} before it is
  *   {@link ObjectPool#borrowObject borrowed} from the pool.
- *  </li>
+ *  </li>已经被挂起的实例在被取出去的时候需要调用activateObject()
  *  <li>
  *   {@link #validateObject validateObject}
  *   is invoked on {@link #activateObject activated} instances to make sure
@@ -42,11 +42,11 @@ package org.apache.commons.pool;
  *   instance being {@link ObjectPool#returnObject returned} to the pool
  *   before it is {@link #passivateObject passivated}. It will only be invoked
  *   on an activated instance.
- *  </li>
+ *  </li>validateObject()会在被取出或被归还对象池的时候被调用。它只会被活跃的实例所调用。
  *  <li>
  *   {@link #passivateObject passivateObject}
  *   is invoked on every instance when it is returned to the pool.
- *  </li>
+ *  </li>当实例被归还对象池时，passivateObject()会被调用
  *  <li>
  *   {@link #destroyObject destroyObject}
  *   is invoked on every instance when it is being "dropped" from the
@@ -72,6 +72,12 @@ package org.apache.commons.pool;
  * @author Sandy McArthur
  * @version $Revision: 1222388 $ $Date: 2011-12-22 13:28:27 -0500 (Thu, 22 Dec 2011) $
  * @since Pool 1.0
+ */
+/**
+ * 一个定义了被ObjectPool所使用的实例的生命周期方法的接口
+ * @author hzsunguanjun
+ *
+ * @param <T>
  */
 public interface PoolableObjectFactory<T> {
   /**
