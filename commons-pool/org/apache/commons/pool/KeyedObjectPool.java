@@ -93,6 +93,15 @@ public interface KeyedObjectPool<K, V> {
      * @throws Exception when {@link KeyedPoolableObjectFactory#makeObject makeObject} throws an exception
      * @throws NoSuchElementException when the pool is exhausted and cannot or will not return another instance
      */
+	/**
+	 * 通过特定的key从对象池中取出实例
+	 * 
+	 * @param key
+	 * @return
+	 * @throws Exception
+	 * @throws NoSuchElementException
+	 * @throws IllegalStateException
+	 */
     V borrowObject(K key) throws Exception, NoSuchElementException, IllegalStateException;
 
     /**

@@ -40,12 +40,19 @@ public final class PoolUtils {
      * Timer used to periodically check pools idle object count.
      * Because a {@link Timer} creates a {@link Thread} this is lazily instantiated.
      */
+	/**
+	 * 用来周期性地检查对象池中空闲对象个数的Timer
+	 * 
+	 */
     private static Timer MIN_IDLE_TIMER; //@GuardedBy("this")
 
     /**
      * PoolUtils instances should NOT be constructed in standard programming.
      * Instead, the class should be used procedurally: PoolUtils.adapt(aPool);.
      * This constructor is public to permit tools that require a JavaBean instance to operate.
+     */
+    /**
+     * PoolUtils中都是静态方法，因此使用这些方法时并不建议实例化PoolUtils。
      */
     public PoolUtils() {
     }
