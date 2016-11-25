@@ -2280,6 +2280,13 @@ public class GenericKeyedObjectPool<K, V> extends BaseKeyedObjectPool<K, V> impl
      *
      * This is also used by {@link GenericObjectPool}.
      */
+    /**
+     * 一个封装了对象和一个时间戳的简单结构。
+     * 实现了Comparable接口，对象从旧到新排序
+     * @author hzsunguanjun
+     *
+     * @param <T>
+     */
     static class ObjectTimestampPair<T> implements Comparable<T> {
         //CHECKSTYLE: stop VisibilityModifier
         /** 

@@ -126,6 +126,7 @@ public abstract class BaseObjectPool<T> implements ObjectPool<T> {
      * Has this pool instance been closed.
      * @return <code>true</code> when this pool has been closed.
      */
+    //判断对象池是否已关闭
     public final boolean isClosed() {
         return closed;
     }
@@ -135,6 +136,7 @@ public abstract class BaseObjectPool<T> implements ObjectPool<T> {
      * @throws IllegalStateException when this pool has been closed.
      * @see #isClosed()
      */
+    //判断对象池是否打开
     protected final void assertOpen() throws IllegalStateException {
         if (isClosed()) {
             throw new IllegalStateException("Pool not open");

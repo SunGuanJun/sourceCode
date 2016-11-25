@@ -37,9 +37,9 @@ import org.apache.commons.pool.impl.GenericKeyedObjectPool.ObjectTimestampPair;
  * When coupled with the appropriate {@link PoolableObjectFactory},
  * <tt>GenericObjectPool</tt> provides robust pooling functionality for
  * arbitrary objects.
- * <p>
+ * <p>当搭配上合适的PoolableObjectFactory，GenericObjectPool能够为任意对象提供健壮的池化功能。
  * A <tt>GenericObjectPool</tt> provides a number of configurable parameters:
- * <ul>
+ * <ul>GenericObjectPool提供了许多可配置的参数
  *  <li>
  *    {@link #setMaxActive <i>maxActive</i>} controls the maximum number of
  *    objects that can be allocated by the pool (checked out to clients, or
@@ -47,28 +47,29 @@ import org.apache.commons.pool.impl.GenericKeyedObjectPool.ObjectTimestampPair;
  *    limit to the number of objects that can be managed by the pool at one time.
  *    When {@link #setMaxActive <i>maxActive</i>} is reached, the pool is said
  *    to be exhausted. The default setting for this parameter is 8.
- *  </li>
+ *  </li>1. maxActive 一段时间内对象池可分配对象的最大值。当该值为负数时，最大值就没有限制。当对象池到达最大活跃数时，
+ *  	该对象池即耗尽资源。默认值为8.
  *  <li>
  *    {@link #setMaxIdle <i>maxIdle</i>} controls the maximum number of objects
  *    that can sit idle in the pool at any time.  When negative, there is no
  *    limit to the number of objects that may be idle at one time. The default
  *    setting for this parameter is 8.
- *  </li>
+ *  </li>2. maxIdle 最大空闲数。若为负，则无限制。默认值为8
  *  <li>
  *    {@link #setWhenExhaustedAction <i>whenExhaustedAction</i>} specifies the
  *    behavior of the {@link #borrowObject} method when the pool is exhausted:
- *    <ul>
+ *    <ul>3. whenExhaustedAction指定了当对象池耗尽资源时调用borrowObject()的行为
  *    <li>
  *      When {@link #setWhenExhaustedAction <i>whenExhaustedAction</i>} is
  *      {@link #WHEN_EXHAUSTED_FAIL}, {@link #borrowObject} will throw
  *      a {@link NoSuchElementException}
- *    </li>
+ *    </li>1). WHEN_EXHAUSTED_FAIL 抛出NoSuchElementException异常
  *    <li>
  *      When {@link #setWhenExhaustedAction <i>whenExhaustedAction</i>} is
  *      {@link #WHEN_EXHAUSTED_GROW}, {@link #borrowObject} will create a new
  *      object and return it (essentially making {@link #setMaxActive <i>maxActive</i>}
  *      meaningless.)
- *    </li>
+ *    </li>2). WHEN_EXHAUSTED_GROW 创建新对象并返回（本质上使maxActivate无效了
  *    <li>
  *      When {@link #setWhenExhaustedAction <i>whenExhaustedAction</i>}
  *      is {@link #WHEN_EXHAUSTED_BLOCK}, {@link #borrowObject} will block
@@ -78,13 +79,14 @@ import org.apache.commons.pool.impl.GenericKeyedObjectPool.ObjectTimestampPair;
  *      most that many milliseconds, after which a {@link NoSuchElementException}
  *      will be thrown.  If {@link #setMaxWait <i>maxWait</i>} is non-positive,
  *      the {@link #borrowObject} method will block indefinitely.
- *    </li>
+ *    </li>3). WHEN_EXHAUSTED_BLOCK 通过调用wait()使进程阻塞，直到有新的或空闲的对象可用。
+ *    此时，如果maxWait为正，则borrowObject()方法会阻塞这么多秒，如果不为正，该方法会一直阻塞。
  *    </ul>
  *    The default <code>whenExhaustedAction</code> setting is
  *    {@link #WHEN_EXHAUSTED_BLOCK} and the default <code>maxWait</code>
  *    setting is -1. By default, therefore, <code>borrowObject</code> will
  *    block indefinitely until an idle instance becomes available.
- *  </li>
+ *  </li>4). whenExhaustedAction的默认设置是WHEN_EXHAUSTED_BLOCK，且maxWait值为-1.即borrowObject会一直阻塞下去
  *  <li>
  *    When {@link #setTestOnBorrow <i>testOnBorrow</i>} is set, the pool will
  *    attempt to validate each object before it is returned from the
@@ -93,7 +95,8 @@ import org.apache.commons.pool.impl.GenericKeyedObjectPool.ObjectTimestampPair;
  *    to validate will be dropped from the pool, and a different object will
  *    be borrowed. The default setting for this parameter is
  *    <code>false.</code>
- *  </li>
+ *  </li>4. 当testOnBorrow被设置成true，对象池会尝试去验证borrowObject()返回的对象。（通过调用Factory的validateObject()）。
+ *  如果对象没有通过验证，那么该对象会从对象池中除去，并返回另一个对象。默认设置为false。
  *  <li>
  *    When {@link #setTestOnReturn <i>testOnReturn</i>} is set, the pool will
  *    attempt to validate each object before it is returned to the pool in the
@@ -101,7 +104,8 @@ import org.apache.commons.pool.impl.GenericKeyedObjectPool.ObjectTimestampPair;
  *    {@link PoolableObjectFactory#validateObject}
  *    method.)  Objects that fail to validate will be dropped from the pool.
  *    The default setting for this parameter is <code>false.</code>
- *  </li>
+ *  </li>5. 当testOnReturn被设置为true，对象池会尝试去验证returnObject()返回的对象。
+ *  如果对象没有通过验证，那么该对象会被除去。默认设置为false。
  * </ul>
  * <p>
  * Optionally, one may configure the pool to examine and possibly evict objects
@@ -112,14 +116,16 @@ import org.apache.commons.pool.impl.GenericKeyedObjectPool.ObjectTimestampPair;
  * to objects in the pool, so if they run too frequently performance issues may
  * result. The idle object eviction thread may be configured using the following
  * attributes:
- * <ul>
+ * <ul>根据用户的选择，对象池可被配置成能够自动检测并除去多余的空闲对象，以保证空闲对象的最小可用。
+ * 这是通过一个异步的“空闲对象回收”线程来完成的。
+ * 
  *  <li>
  *   {@link #setTimeBetweenEvictionRunsMillis <i>timeBetweenEvictionRunsMillis</i>}
  *   indicates how long the eviction thread should sleep before "runs" of examining
  *   idle objects.  When non-positive, no eviction thread will be launched. The
  *   default setting for this parameter is -1 (i.e., idle object eviction is
  *   disabled by default).
- *  </li>
+ *  </li>timeBetweenEvictionRunsMillis 回收线程在运行之前需要休眠的时间。若为负数，则一直休眠。默认为-1。
  *  <li>
  *   {@link #setMinEvictableIdleTimeMillis <i>minEvictableIdleTimeMillis</i>}
  *   specifies the minimum amount of time that an object may sit idle in the pool
@@ -127,7 +133,9 @@ import org.apache.commons.pool.impl.GenericKeyedObjectPool.ObjectTimestampPair;
  *   will be dropped from the pool due to idle time alone. This setting has no
  *   effect unless <code>timeBetweenEvictionRunsMillis > 0.</code> The default
  *   setting for this parameter is 30 minutes.
- *  </li>
+ *  </li>minEvictableIdleTimeMillis 最小空闲收回时间，空闲了这么久才会被回收。当为非正数时，永远不会被回收。
+ *  该设置只有在timeBetweenEvictionRunsMills>0时有效
+ *  默认值为30分钟。
  *  <li>
  *   {@link #setTestWhileIdle <i>testWhileIdle</i>} indicates whether or not idle
  *   objects should be validated using the factory's
@@ -135,7 +143,9 @@ import org.apache.commons.pool.impl.GenericKeyedObjectPool.ObjectTimestampPair;
  *   validate will be dropped from the pool. This setting has no effect unless
  *   <code>timeBetweenEvictionRunsMillis > 0.</code>  The default setting for
  *   this parameter is <code>false.</code>
- *  </li>
+ *  </li>testWhileIdle 指定了空闲对象是否需要验证。
+ *  该设置只有在timeBetweenEvictionRunsMills>0时有效
+ *  默认设置为false
  *  <li>
  *   {@link #setSoftMinEvictableIdleTimeMillis <i>softMinEvictableIdleTimeMillis</i>}
  *   specifies the minimum amount of time an object may sit idle in the pool
@@ -148,7 +158,7 @@ import org.apache.commons.pool.impl.GenericKeyedObjectPool.ObjectTimestampPair;
  *   (that is, if <code>minEvictableIdleTimeMillis</code> is positive, then
  *   <code>softMinEvictableIdleTimeMillis</code> is ignored). The default setting for
  *   this parameter is -1 (disabled).
- *  </li>
+ *  </li>softMinEvictableIdleTimeMills
  *  <li>
  *   {@link #setNumTestsPerEvictionRun <i>numTestsPerEvictionRun</i>}
  *   determines the number of objects examined in each run of the idle object
@@ -188,6 +198,12 @@ import org.apache.commons.pool.impl.GenericKeyedObjectPool.ObjectTimestampPair;
  * @author Sandy McArthur
  * @version $Revision: 1222396 $ $Date: 2011-12-22 14:02:25 -0500 (Thu, 22 Dec 2011) $
  * @since Pool 1.0
+ */
+/**
+ * 一个可配置的ObjectPool实现
+ * @author hzsunguanjun
+ *
+ * @param <T>
  */
 public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPool<T> {
 
@@ -1056,8 +1072,9 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
      */
     @Override
     public T borrowObject() throws Exception {
+    	//第一步，创建请求latch放入分配队列，设置相关属性，并执行一次分配动作
         long starttime = System.currentTimeMillis();
-        Latch<T> latch = new Latch<T>();
+        Latch<T> latch = new Latch<T>();//保存Object的基本单位
         byte whenExhaustedAction;
         long maxWait;
         synchronized (this) {
@@ -1072,26 +1089,34 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
         }
         // Work the allocation queue, allocating idle instances and
         // instance creation permits in request arrival order
+        // 根据请求到达顺序执行一次分配动作
         allocate();
 
+        //
         for(;;) {
             synchronized (this) {
-                assertOpen();
+                assertOpen();//判断对象池是否打开
             }
 
             // If no object was allocated from the pool above
+            // 如果前面没有分配对象
             if(latch.getPair() == null) {
                 // check if we were allowed to create one
+            	// 检测是否需要创建新对象
                 if(latch.mayCreate()) {
                     // allow new object to be created
+                	// 允许创建新对象，but，为什么是空的？
                 } else {
                     // the pool is exhausted
+                	// 对象池已经耗尽资源
                     switch(whenExhaustedAction) {
                         case WHEN_EXHAUSTED_GROW:
                             // allow new object to be created
+                        	//允许创建
                             synchronized (this) {
                                 // Make sure another thread didn't allocate us an object
                                 // or permit a new object to be created
+                            	// 确保其他线程不会分配或者新建给我们一个对象
                                 if (latch.getPair() == null && !latch.mayCreate()) {
                                     _allocationQueue.remove(latch);
                                     _numInternalProcessing++;
@@ -1245,17 +1270,23 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
      * as _maxActive allows. While it is safe for GOP, for consistency with GKOP
      * this method should not be called from inside a sync block. 
      */
+    /**
+     * 根据分配顺序给latches分配可用的实例。然后将_mayCreate设为true
+     * 分配一次理论上可以处理掉队列中所有请求（资源够用的情况下）
+     * 所以这个allocate并不创建新对象，
+     */
     private synchronized void allocate() {
         if (isClosed()) return;
 
         // First use any objects in the pool to clear the queue
+        // 首先使用对象池中的任意对象来清空队列
         for (;;) {
-            if (!_pool.isEmpty() && !_allocationQueue.isEmpty()) {
-                Latch<T> latch = _allocationQueue.removeFirst();
-                latch.setPair( _pool.removeFirst());
+            if (!_pool.isEmpty() && !_allocationQueue.isEmpty()) { //如果对象池中空闲对象队列非空，并且分配请求队列非空
+                Latch<T> latch = _allocationQueue.removeFirst(); //消费掉分配请求队列中的第一个请求
+                latch.setPair( _pool.removeFirst());	//将空闲对象队列中的第一个对象分配掉
                 _numInternalProcessing++;
                 synchronized (latch) {
-                    latch.notify();
+                    latch.notify(); //通知请求？（因为一般情况下，如果分配不了，请求线程会挂起）
                 }
             } else {
                 break;
@@ -1263,12 +1294,14 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
         }
 
         // Second utilise any spare capacity to create new objects
+        // 然后使用任意空余空间来创建新对象
         for(;;) {
             if((!_allocationQueue.isEmpty()) && (_maxActive < 0 || (_numActive + _numInternalProcessing) < _maxActive)) {
-                Latch<T> latch = _allocationQueue.removeFirst();
-                latch.setMayCreate(true);
+            	// 如果请求队列非空，并且（最大活跃数小于0，或者_numActive + _numInternalProcessing<这是什么>，，，）    
+                Latch<T> latch = _allocationQueue.removeFirst();//消费请求
+                latch.setMayCreate(true);//将创建新对象只为true
                 _numInternalProcessing++;
-                synchronized (latch) {
+                synchronized (latch) { //唤醒请求
                     latch.notify();
                 }
             } else {
@@ -1549,6 +1582,9 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
      * in sequence, cycling through objects in oldest-to-youngest order.</p>
      *
      * @throws Exception if the pool is closed or eviction fails.
+     * 
+     * 
+     * 
      */
     public void evict() throws Exception {
         assertOpen();
@@ -1712,10 +1748,12 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
      * @param delay milliseconds between evictor runs.
      */
     protected synchronized void startEvictor(long delay) {
+    	//如果_evictor线程已存在，则将该线程取消
         if(null != _evictor) {
             EvictionTimer.cancel(_evictor);
             _evictor = null;
         }
+        //如果delay>0，则新建一个Evitor，并设置相关数据
         if(delay > 0) {
             _evictor = new Evictor();
             EvictionTimer.schedule(_evictor, delay, delay);
@@ -1762,6 +1800,7 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
 
     /**
      * The idle object evictor {@link TimerTask}.
+     * 空闲对象驱逐者
      * @see GenericObjectPool#setTimeBetweenEvictionRunsMillis
      */
     private class Evictor extends TimerTask {
@@ -1769,6 +1808,9 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
          * Run pool maintenance.  Evict objects qualifying for eviction and then
          * invoke {@link GenericObjectPool#ensureMinIdle()}.
          */
+    	/**
+    	 * 该定时任务用来运行对象池维护方法。
+    	 */
         @Override
         public void run() {
             try {
@@ -1856,19 +1898,24 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
      * Latch used to control allocation order of objects to threads to ensure
      * fairness. That is, objects are allocated to threads in the order that
      * threads request objects.
+     * 
+     * Latch 根据线程请求的顺序分配对象
      */
     private static final class Latch<T> {
         
         /** object timestamp pair allocated to this latch */
+    	//记录下请求对象的类型和时间戳
         private ObjectTimestampPair<T> _pair;
         
         /** Whether or not this latch may create an object instance */
+        //该latch是否会创建对象
         private boolean _mayCreate = false;
 
         /**
          * Returns ObjectTimestampPair allocated to this latch
          * @return ObjectTimestampPair allocated to this latch
          */
+        //返回
         private synchronized ObjectTimestampPair<T> getPair() {
             return _pair;
         }
@@ -2057,6 +2104,7 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
     private boolean _lifo = DEFAULT_LIFO;
 
     /** My pool. */
+    //队列，用于保存空闲对象，ObjectTimestampPair的值即为真实的Object
     private CursorableLinkedList<ObjectTimestampPair<T>> _pool = null;
 
     /** Eviction cursor - keeps track of idle object evictor position */
@@ -2081,12 +2129,16 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
      * (usually creation or destruction) that should be included in the total
      * number of objects but are neither active nor idle.
      */
+    // 内部操作计数，用来控制范围
     private int _numInternalProcessing = 0;
 
     /**
      * Used to track the order in which threads call {@link #borrowObject()} so
      * that objects can be allocated in the order in which the threads requested
      * them.
+     */
+    /**
+     * 队列，顺序保存线程调用borrowObject()的请求
      */
     private final LinkedList<Latch<T>> _allocationQueue = new LinkedList<Latch<T>>();
 
