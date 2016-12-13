@@ -1051,21 +1051,29 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
      * will be activated and returned.  If activation fails, or {@link #getTestOnBorrow() testOnBorrow} is set
      * to true and validation fails, the instance is destroyed and the next available instance is examined.
      * This continues until either a valid instance is returned or there are no more idle instances available.</p>
+     * 如果对象池里有一个有空闲可用实例，那么最近入池的（如果lifo，last in first out为true），或者最早入池的（lifo为false）空闲对象或被激活并返回
+     * 如果某一个对象激活失败，或者testOnBorrow验证时失败，则销毁该对象并检验下一个可用对象。这个流程会持续进行直到一个有效实例被返回或者没有更多的可用空闲实例。
      * 
      * <p>If there are no idle instances available in the pool, behavior depends on the {@link #getMaxActive() maxActive}
      * and (if applicable) {@link #getWhenExhaustedAction() whenExhaustedAction} and {@link #getMaxWait() maxWait}
      * properties. If the number of instances checked out from the pool is less than <code>maxActive,</code> a new
      * instance is created, activated and (if applicable) validated and returned to the caller.</p>
+     * 如果对象池中没有可用的空闲对象了，它会做出相应的行为，这些行为依赖于maxActive、whenExhaustedAction和maxWait等属性。
+     * 如果对象池提供的对象的数量小于最大活跃数，一个新的对象就会被产生、激活、验证、然后返回给调用者。
      * 
      * <p>If the pool is exhausted (no available idle instances and no capacity to create new ones),
      * this method will either block ({@link #WHEN_EXHAUSTED_BLOCK}), throw a <code>NoSuchElementException</code>
      * ({@link #WHEN_EXHAUSTED_FAIL}), or grow ({@link #WHEN_EXHAUSTED_GROW} - ignoring maxActive).
      * The length of time that this method will block when <code>whenExhaustedAction == WHEN_EXHAUSTED_BLOCK</code>
      * is determined by the {@link #getMaxWait() maxWait} property.</p>
+     * 如果对象池耗尽了资源（没有可用的空闲对象，也没有创建新对象的空间），这个返回会阻塞（WHEN_EXHAUSTED_BLOCK)、抛出NoSuchElementException（WHEN_EXHAUSTED_FAIL），
+     * 或者增加资源（WHEN_EXHAUSTED_GROW，忽略maxActive）。
+     * 这个方法阻塞的时间的长度由maxWait属性决定。
      * 
      * <p>When the pool is exhausted, multiple calling threads may be simultaneously blocked waiting for instances
      * to become available.  As of pool 1.5, a "fairness" algorithm has been implemented to ensure that threads receive
      * available instances in request arrival order.</p>
+     * 当对象池耗尽了资源，多个调用线程可能会同时阻塞，等待对象可用。从pool 1.5版本开始，一个能够保证线程根据请求先后顺序来获得对象的公平的算法已经被实现了。
      * 
      * @return object instance
      * @throws NoSuchElementException if an instance cannot be returned
@@ -1073,7 +1081,7 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
     @Override
     public T borrowObject() throws Exception {
     	//第一步，创建请求latch放入分配队列，设置相关属性，并执行一次分配动作
-        long starttime = System.currentTimeMillis();
+        long starttime = System.currentTimeMillis();	//开始时间，这个拿来干啥？
         Latch<T> latch = new Latch<T>();//保存Object的基本单位
         byte whenExhaustedAction;
         long maxWait;
@@ -1081,10 +1089,12 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
             // Get local copy of current config. Can't sync when used later as
             // it can result in a deadlock. Has the added advantage that config
             // is consistent for entire method execution
+        	// 获取当前设置的局部拷贝。
             whenExhaustedAction = _whenExhaustedAction;
             maxWait = _maxWait;
 
             // Add this request to the queue
+            // 将本请求锁加入队列
             _allocationQueue.add(latch);
         }
         // Work the allocation queue, allocating idle instances and
@@ -1099,20 +1109,20 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
             }
 
             // If no object was allocated from the pool above
-            // 如果前面没有分配对象
+            // 如果前面没有分配对象。检测该请求的latch有没有被分配到对象。如果有的话，latch的pair应该有值
             if(latch.getPair() == null) {
                 // check if we were allowed to create one
-            	// 检测是否需要创建新对象
+            	// 检测是否需要创建新对象。如果需要，mayCreate()
                 if(latch.mayCreate()) {
                     // allow new object to be created
                 	// 允许创建新对象，but，为什么是空的？
                 } else {
                     // the pool is exhausted
-                	// 对象池已经耗尽资源
+                	// 对象池已经耗尽资源。不能创建新对象就是资源耗尽了？
                     switch(whenExhaustedAction) {
                         case WHEN_EXHAUSTED_GROW:
                             // allow new object to be created
-                        	//允许创建
+                        	// 允许创建
                             synchronized (this) {
                                 // Make sure another thread didn't allocate us an object
                                 // or permit a new object to be created
@@ -1144,7 +1154,7 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
                                         } else {
                                             // this code may be executed again after a notify then continue cycle
                                             // so, need to calculate the amount of time to wait
-                                            final long elapsed = (System.currentTimeMillis() - starttime);
+                                            final long elapsed = (System.currentTimeMillis() - starttime); //之前记录的starttime就是用在了这
                                             final long waitTime = maxWait - elapsed;
                                             if (waitTime > 0)
                                             {
@@ -1156,6 +1166,7 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
                                     }
                                 }
                                 // see if we were awakened by a closing pool
+                                // 判断是否是被一个已关闭的对象池唤醒的
                                 if(isClosed() == true) {
                                     throw new IllegalStateException("Pool closed");
                                 }
@@ -1163,17 +1174,21 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
                                 boolean doAllocate = false;
                                 synchronized(this) {
                                     // Need to handle the all three possibilities
+                                	// 需要处理所有三种可能性
                                     if (latch.getPair() == null && !latch.mayCreate()) {
                                         // Case 1: latch still in allocation queue
                                         // Remove latch from the allocation queue
+                                    	// 第一种情况：如果latch仍然在待分配队列，则将其移除
                                         _allocationQueue.remove(latch);
                                     } else if (latch.getPair() == null && latch.mayCreate()) {
                                         // Case 2: latch has been given permission to create
                                         //         a new object
+                                    	// 第二种情况，latch已经允许创建新对象，则将_numInternalProcessing自减1，（因为该对象实际上没有产生）
                                         _numInternalProcessing--;
                                         doAllocate = true;
                                     } else {
                                         // Case 3: An object has been allocated
+                                    	// 第三种情况，对象已经被分配，则将该对象返还对象池
                                         _numInternalProcessing--;
                                         _numActive++;
                                         returnObject(latch.getPair().getValue());
@@ -1272,7 +1287,7 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
      */
     /**
      * 根据分配顺序给latches分配可用的实例。然后将_mayCreate设为true
-     * 分配一次理论上可以处理掉队列中所有请求（资源够用的情况下）
+     * 分配一次理论上可以处理掉队列中所有请求（资源够用的情况下） 
      * 所以这个allocate并不创建新对象，
      */
     private synchronized void allocate() {
@@ -1297,9 +1312,9 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
         // 然后使用任意空余空间来创建新对象
         for(;;) {
             if((!_allocationQueue.isEmpty()) && (_maxActive < 0 || (_numActive + _numInternalProcessing) < _maxActive)) {
-            	// 如果请求队列非空，并且（最大活跃数小于0，或者_numActive + _numInternalProcessing<这是什么>，，，）    
+            	// 如果请求队列非空，并且（最大活跃数小于0，或者_numActive + _numInternalProcessing<已经激活的，加上这次激活的>，，，）    
                 Latch<T> latch = _allocationQueue.removeFirst();//消费请求
-                latch.setMayCreate(true);//将创建新对象只为true
+                latch.setMayCreate(true);//将创建新对象置为true
                 _numInternalProcessing++;
                 synchronized (latch) { //唤醒请求
                     latch.notify();
@@ -1314,12 +1329,14 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
      * {@inheritDoc}
      * <p>Activation of this method decrements the active count and attempts to destroy the instance.</p>
      * 
+     * 
      * @throws Exception if the configured {@link PoolableObjectFactory} throws an exception destroying obj
      */
     @Override
     public void invalidateObject(T obj) throws Exception {
         try {
             if (_factory != null) {
+            	// 如果没有factory怎么销毁？
                 _factory.destroyObject(obj);
             }
         } finally {
@@ -1335,6 +1352,7 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
      * idle instance pool and then invoking the configured 
      * {@link PoolableObjectFactory#destroyObject(Object)} method on each idle
      * instance. 
+     * 清理对象池。将对象从空闲对象池中移出，并调用析构方法
      * 
      * <p> Implementation notes:
      * <ul><li>This method does not destroy or effect in any way instances that are
@@ -1350,6 +1368,7 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
         List<ObjectTimestampPair<T>> toDestroy = new ArrayList<ObjectTimestampPair<T>>();
 
         synchronized(this) {
+        	//将对象移出list应该会挺快，因为它不涉及到大块的内存操作
             toDestroy.addAll(_pool);
             _numInternalProcessing = _numInternalProcessing + _pool._size;
             _pool.clear();
@@ -1363,6 +1382,8 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
      * instances of ObjectTimestampPair and that the object instances that
      * they wrap were created by the factory.
      * 
+     * 销毁所有对象，用提供的对象工程。
+     * 假定这些对象是ObjectTimestampPair对象，并且是被工厂创建的
      * @param c Collection of objects to destroy
      * @param factory PoolableConnectionFactory used to destroy the objects
      */
@@ -1404,11 +1425,15 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
     /**
      * <p>Returns an object instance to the pool.</p>
      * 
+     * 将对象返还对象池
+     * 
      * <p>If {@link #getMaxIdle() maxIdle} is set to a positive value and the number of idle instances
      * has reached this value, the returning instance is destroyed.</p>
+     * 如果maxIdle被设置为一个正数并且空闲对象的数量已经到达这个值了，那么返还的对象会把销毁
      * 
      * <p>If {@link #getTestOnReturn() testOnReturn} == true, the returning instance is validated before being returned
      * to the idle instance pool.  In this case, if validation fails, the instance is destroyed.</p>
+     * 如果testOnReturn被设置为true，那么对象返还之前会被验证一下。在这种情况下，如果验证失败，那么该对象会被销毁。
      * 
      * <p><strong>Note: </strong> There is no guard to prevent an object
      * being returned to the pool multiple times. Clients are expected to
@@ -1417,6 +1442,7 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
      * borrowed again between returns). Violating this contract will result in
      * the same object appearing multiple times in the pool and pool counters
      * (numActive, numIdle) returning incorrect values.</p>
+     * 同一个对象多次返还对象池，这种操作是没有保护的
      * 
      * @param obj instance to return to the pool
      */
@@ -1900,6 +1926,7 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
      * threads request objects.
      * 
      * Latch 根据线程请求的顺序分配对象
+     * latch（门闩、锁存器）
      */
     private static final class Latch<T> {
         
@@ -2001,6 +2028,7 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
      * is invoked when the pool is exhausted (the maximum number
      * of "active" objects has been reached).
      *
+     *	当borrowObject()被调用，且对象池耗尽资源时，对象池会采取的行动
      * @see #WHEN_EXHAUSTED_BLOCK
      * @see #WHEN_EXHAUSTED_FAIL
      * @see #WHEN_EXHAUSTED_GROW

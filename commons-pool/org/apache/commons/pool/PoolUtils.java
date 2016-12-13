@@ -62,6 +62,7 @@ public final class PoolUtils {
      * one of the Throwables that should never be swallowed). Used by the pool
      * error handling for operations that throw exceptions that normally need to
      * be ignored.
+     * Ö»Å×³öThreadDeathºÍVirtualMachineError
      * @param t The Throwable to check
      * @throws ThreadDeath if that is passed in
      * @throws VirtualMachineError if that is passed in
