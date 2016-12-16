@@ -31,6 +31,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * A facility for threads to schedule tasks for future execution in a
  * background thread.  Tasks may be scheduled for one-time execution, or for
  * repeated execution at regular intervals.
+ * 一个在后台进程中的设备，它可以给其他线程安排在未来执行的任务。
+ * 任务可以被安排成一次执行，也可以被设置成固定间隔重复执行
  *
  * <p>Corresponding to each <tt>Timer</tt> object is a single background
  * thread that is used to execute all of the timer's tasks, sequentially.
@@ -39,6 +41,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * turn, delay the execution of subsequent tasks, which may "bunch up" and
  * execute in rapid succession when (and if) the offending task finally
  * completes.
+ * 与每个Timer对象对应的是一个用来顺序执行所有计时任务的后台线程。
+ * Timer任务必须快速完成。如果一个Timer任务花费了过多的时间，那么它可能会“压垮”这个线程。
+ * 这样可能会拖延后续任务的执行，让他们“缩成一团”  （快速执行？）
+ * 
  *
  * <p>After the last live reference to a <tt>Timer</tt> object goes away
  * <i>and</i> all outstanding tasks have completed execution, the timer's task
@@ -48,16 +54,23 @@ import java.util.concurrent.atomic.AtomicInteger;
  * so it is capable of keeping an application from terminating.  If a caller
  * wants to terminate a timer's task execution thread rapidly, the caller
  * should invoke the timer's <tt>cancel</tt> method.
+ * 等到最后一个指向Timer的引用离开，并且所有遗留任务都完成了，这个timer的任务执行线程就会平滑地终止（然后可以被内存回收）。
+ * 然而，这一般需要花很长时间才会发生。
+ * 默认情况下，任务执行线程不会已后台线程的形式运行，所以它可以方式应用的终止。
+ * 如果调用者希望立即终止一个timer的任务执行线程，他可以通过调用cancel()方法来实现。
  *
  * <p>If the timer's task execution thread terminates unexpectedly, for
  * example, because its <tt>stop</tt> method is invoked, any further
  * attempt to schedule a task on the timer will result in an
  * <tt>IllegalStateException</tt>, as if the timer's <tt>cancel</tt>
  * method had been invoked.
- *
+ * 如果timer的任务执行线程异常终止了，比如因为stop()被调用了，之后所有尝试安排给timer的任务都会导致IllegalStateException，
+ * 就像cancel()被调用了一样。
+ * 
  * <p>This class is thread-safe: multiple threads can share a single
  * <tt>Timer</tt> object without the need for external synchronization.
- *
+ * 这个类是线程安全的，多个线程可以共享一个单独的Timer对象，并不需要额外的同步机制。
+ * 
  * <p>This class does <i>not</i> offer real-time guarantees: it schedules
  * tasks using the <tt>Object.wait(long)</tt> method.
  *

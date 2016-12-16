@@ -30,6 +30,10 @@ import java.util.TimerTask;
  * being left running which, in application server environments, can lead to
  * memory leads and/or prevent applications from shutting down or reloading
  * cleanly.
+ * 提供了一个所有对象池共享的空闲对象回收计时器。
+ * 这个类包装了一个标准的Timer并跟踪了有多少对象池正在使用它
+ * 
+ * 
  * </p>
  * <p>
  * This class has package scope to prevent its inclusion in the pool public API.

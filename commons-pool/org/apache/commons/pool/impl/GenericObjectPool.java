@@ -339,6 +339,7 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
 
     /**
      * The default value for {@link #getMinEvictableIdleTimeMillis}.
+     * 30分钟
      * @see #getMinEvictableIdleTimeMillis
      * @see #setMinEvictableIdleTimeMillis
      */
@@ -1743,6 +1744,8 @@ public class GenericObjectPool<T> extends BaseObjectPool<T> implements ObjectPoo
     /**
      * Create an object, and place it into the pool.
      * addObject() is useful for "pre-loading" a pool with idle objects.
+     * 创建一个对象，并把它放进池中。
+     * addObject()对预加载空闲对象到对象池中很有用
      */
     @Override
     public void addObject() throws Exception {
