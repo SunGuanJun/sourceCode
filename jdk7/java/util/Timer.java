@@ -73,6 +73,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 
  * <p>This class does <i>not</i> offer real-time guarantees: it schedules
  * tasks using the <tt>Object.wait(long)</tt> method.
+ * 这个类不提供实时保证，它通过Object.wait(long)来安排任务。
  *
  * <p>Java 5.0 introduced the {@code java.util.concurrent} package and
  * one of the concurrency utilities therein is the {@link
@@ -85,13 +86,19 @@ import java.util.concurrent.atomic.AtomicInteger;
  * implement {@code Runnable}).  Configuring {@code
  * ScheduledThreadPoolExecutor} with one thread makes it equivalent to
  * {@code Timer}.
+ * Java 5.0 介绍了concurrent包，这里用到了其中一个并发工具类ScheduledThreadPoolExecutor，一个重复执行任务的线程池。
+ * 它是Timer/TimerTask组合的一个有效的更通用的替代者，因为它允许多个服务线程，能识别多样的时间单位，并且不需要继承TimeTask，只需要实现Runnable接口即可。
+ * 使用一个线程配置ScheduledThreadPoolExecutor可以使它做到和Timer一样的事。
  *
  * <p>Implementation note: This class scales to large numbers of concurrently
  * scheduled tasks (thousands should present no problem).  Internally,
  * it uses a binary heap to represent its task queue, so the cost to schedule
  * a task is O(log n), where n is the number of concurrently scheduled tasks.
+ * 实现笔记：这个类可以承载大量的并发任务（几千个没问题）。
+ * 在内部实现上，它使用二叉堆来存储它的任务队列，所以安排一个任务的复杂度是O(log n)，其中n是并发任务的数量。
  *
  * <p>Implementation note: All constructors start a timer thread.
+ * 实现笔记：所有构造方法都会起一个timer线程。
  *
  * @author  Josh Bloch
  * @see     TimerTask
@@ -105,6 +112,9 @@ public class Timer {
      * thread.  The timer produces tasks, via its various schedule calls,
      * and the timer thread consumes, executing timer tasks as appropriate,
      * and removing them from the queue when they're obsolete.
+     * 定时任务队列。
+     * 这个数据结构被定时线程所共享。（并不是static的，如何做到共享？）
+     * timer通过它多样的任务安排调用来产生任务，然后timerThread来消费这些定时任务，以合适的方式，并且在将废弃的任务移出队列。
      */
     private final TaskQueue queue = new TaskQueue();
 
@@ -578,6 +588,9 @@ class TimerThread extends Thread {
  * shares with its TimerThread.  Internally this class uses a heap, which
  * offers log(n) performance for the add, removeMin and rescheduleMin
  * operations, and constant time performance for the getMin operation.
+ * 这个类代表了定时任务队列，一个以下一次执行时间为顺序的队列。
+ * 每一个定时器对象都拥有这样一个队列，然后这个队列被它的TimerThread所共享。
+ * 它的内部实现是一个堆，增加、移出最小值，重新安排最小值等操作的复杂度是O(log n)，获取最小值的复杂度是O(1)
  */
 class TaskQueue {
     /**
@@ -587,17 +600,25 @@ class TaskQueue {
      * nextExecutionTime is in queue[1] (assuming the queue is nonempty).  For
      * each node n in the heap, and each descendant of n, d,
      * n.nextExecutionTime <= d.nextExecutionTime.
+     * 用平衡二叉堆来表示的顺序队列。
+     * queue[n]的两个子节点是queue[2*n]和queue[2*n+1]。
+     * 这个队列是根据nextExecutionTime字段来排序的：假设该队列非空，那么拥有最小nextExecutionTime的TimerTask就是queue[1]（队首）。
+     * 每个节点的nextExecutionTime都小于它子孙的nextExecutionTime。
+     * 
      */
     private TimerTask[] queue = new TimerTask[128];
 
     /**
      * The number of tasks in the priority queue.  (The tasks are stored in
      * queue[1] up to queue[size]).
+     * 队列中的任务个数
+     * 从1到size。真的不是从0开始的？
      */
     private int size = 0;
 
     /**
      * Returns the number of tasks currently on the queue.
+     * 
      */
     int size() {
         return size;
@@ -605,9 +626,11 @@ class TaskQueue {
 
     /**
      * Adds a new task to the priority queue.
+     * 增加一个新任务到队列中
      */
     void add(TimerTask task) {
         // Grow backing store if necessary
+    	// 增加队列空间，当数组满了的时候。空间增加一倍
         if (size + 1 == queue.length)
             queue = Arrays.copyOf(queue, 2*queue.length);
 
