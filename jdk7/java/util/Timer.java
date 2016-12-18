@@ -120,6 +120,7 @@ public class Timer {
 
     /**
      * The timer thread.
+     * 和Timer共享一个队列
      */
     private final TimerThread thread = new TimerThread(queue);
 
@@ -500,6 +501,10 @@ public class Timer {
  * waits for tasks on the timer queue, executions them when they fire,
  * reschedules repeating tasks, and removes cancelled tasks and spent
  * non-repeating tasks from the queue.
+ * 这个辅助类实现了计时器的任务执行线程，它可以实现这样的功能
+ * 在任务队列中等待执行，当它们被激活时执行它们，如果是需要重复执行的任务就重新安排执行计划，移除被取消的任务，执行只需执行一次的任务。
+ * 你的翻译真是弱爆啦
+ * 
  */
 class TimerThread extends Thread {
     /**
@@ -508,6 +513,9 @@ class TimerThread extends Thread {
      * is true and there are no more tasks in our queue, there is no
      * work left for us to do, so we terminate gracefully.  Note that
      * this field is protected by queue's monitor!
+     * 当没有引用指向这个TimerThread的Timer对象时，内存回收者会将该字段置为false来通知我们。
+     * 当这个字段为true并且队列中没有更多的任务，我们可以优雅地终止这个线程。
+     * 注意这个字段被队列监控器保护着。
      */
     boolean newTasksMayBeScheduled = true;
 
@@ -634,6 +642,7 @@ class TaskQueue {
         if (size + 1 == queue.length)
             queue = Arrays.copyOf(queue, 2*queue.length);
 
+        //增加的时候是加在末尾的，然后再用fixup来维护堆
         queue[++size] = task;
         fixUp(size);
     }
@@ -641,6 +650,7 @@ class TaskQueue {
     /**
      * Return the "head task" of the priority queue.  (The head task is an
      * task with the lowest nextExecutionTime.)
+     * 返回顺序队列的第一个任务
      */
     TimerTask getMin() {
         return queue[1];
@@ -650,6 +660,7 @@ class TaskQueue {
      * Return the ith task in the priority queue, where i ranges from 1 (the
      * head task, which is returned by getMin) to the number of tasks on the
      * queue, inclusive.
+     * 
      */
     TimerTask get(int i) {
         return queue[i];
@@ -657,10 +668,13 @@ class TaskQueue {
 
     /**
      * Remove the head task from the priority queue.
+     * 移除第一个任务；
+     * 其实就是堆的做法，将最后一个节点放到最上面，然后再维护一下
      */
     void removeMin() {
         queue[1] = queue[size];
         queue[size--] = null;  // Drop extra reference to prevent memory leak
+        //将无用的引用置为null以防止内存泄漏
         fixDown(1);
     }
 
@@ -668,6 +682,8 @@ class TaskQueue {
      * Removes the ith element from queue without regard for maintaining
      * the heap invariant.  Recall that queue is one-based, so
      * 1 <= i <= size.
+     * 移除第i个任务，不维护堆的不变性。
+     * 这样做的话会破坏堆的特性啊，一般会用在哪种场景下呢？
      */
     void quickRemove(int i) {
         assert i <= size;
@@ -679,6 +695,7 @@ class TaskQueue {
     /**
      * Sets the nextExecutionTime associated with the head task to the
      * specified value, and adjusts priority queue accordingly.
+     * 将队列中第一个任务的nextExecutionTime设置为newTime，并且调整堆
      */
     void rescheduleMin(long newTime) {
         queue[1].nextExecutionTime = newTime;
@@ -687,6 +704,7 @@ class TaskQueue {
 
     /**
      * Returns true if the priority queue contains no elements.
+     * 判断队列是否为空
      */
     boolean isEmpty() {
         return size==0;
@@ -694,9 +712,11 @@ class TaskQueue {
 
     /**
      * Removes all elements from the priority queue.
+     * 清空队列
      */
     void clear() {
         // Null out task references to prevent memory leak
+    	//将队列置为null
         for (int i=1; i<=size; i++)
             queue[i] = null;
 
@@ -707,10 +727,13 @@ class TaskQueue {
      * Establishes the heap invariant (described above) assuming the heap
      * satisfies the invariant except possibly for the leaf-node indexed by k
      * (which may have a nextExecutionTime less than its parent's).
+     * 从下到上来维护堆
+     * 可能是用在添加的时候
      *
      * This method functions by "promoting" queue[k] up the hierarchy
      * (by swapping it with its parent) repeatedly until queue[k]'s
      * nextExecutionTime is greater than or equal to that of its parent.
+     * 
      */
     private void fixUp(int k) {
         while (k > 1) {
@@ -723,23 +746,29 @@ class TaskQueue {
     }
 
     /**
+     * 复杂度应该是O(log n)
      * Establishes the heap invariant (described above) in the subtree
      * rooted at k, which is assumed to satisfy the heap invariant except
      * possibly for node k itself (which may have a nextExecutionTime greater
      * than its children's).
+     * 调整堆，使其特性不变
      *
      * This method functions by "demoting" queue[k] down the hierarchy
      * (by swapping it with its smaller child) repeatedly until queue[k]'s
      * nextExecutionTime is less than or equal to those of its children.
+     * 通过层层降级的方式将节点k移动到合适的位置
      */
     private void fixDown(int k) {
         int j;
         while ((j = k << 1) <= size && j > 0) {
+        	//先找出较小的那个节点
             if (j < size &&
                 queue[j].nextExecutionTime > queue[j+1].nextExecutionTime)
                 j++; // j indexes smallest kid
+            //如果父节点的值小于子节点，循环结束，该堆已满足条件
             if (queue[k].nextExecutionTime <= queue[j].nextExecutionTime)
                 break;
+            //交换父子节点
             TimerTask tmp = queue[j];  queue[j] = queue[k]; queue[k] = tmp;
             k = j;
         }
@@ -748,6 +777,8 @@ class TaskQueue {
     /**
      * Establishes the heap invariant (described above) in the entire tree,
      * assuming nothing about the order of the elements prior to the call.
+     * 建堆
+     * 从中间开始，向上建立
      */
     void heapify() {
         for (int i = size/2; i >= 1; i--)
