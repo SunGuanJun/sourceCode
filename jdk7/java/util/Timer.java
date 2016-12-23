@@ -130,6 +130,9 @@ public class Timer {
      * tasks in the timer queue.  It is used in preference to a finalizer on
      * Timer as such a finalizer would be susceptible to a subclass's
      * finalizer forgetting to call it.
+     * 
+     * 貌似来处理内存问题的
+     * 
      */
     private final Object threadReaper = new Object() {
         protected void finalize() throws Throwable {
@@ -142,6 +145,7 @@ public class Timer {
 
     /**
      * This ID is used to generate thread names.
+     * 用于生成线程名
      */
     private final static AtomicInteger nextSerialNumber = new AtomicInteger(0);
     private static int serialNumber() {
@@ -159,10 +163,12 @@ public class Timer {
     /**
      * Creates a new timer whose associated thread may be specified to
      * {@linkplain Thread#setDaemon run as a daemon}.
+     * 创建一个Timer
      * A daemon thread is called for if the timer will be used to
      * schedule repeating "maintenance activities", which must be
      * performed as long as the application is running, but should not
      * prolong the lifetime of the application.
+     * 只要应用运行着，重复的定时任务就一直重复执行，但是，它并不会延长应用的生命周期
      *
      * @param isDaemon true if the associated thread should run as a daemon.
      */
@@ -174,6 +180,8 @@ public class Timer {
      * Creates a new timer whose associated thread has the specified name.
      * The associated thread does <i>not</i>
      * {@linkplain Thread#setDaemon run as a daemon}.
+     * 
+     * 设置关联定时线程的名字
      *
      * @param name the name of the associated thread
      * @throws NullPointerException if {@code name} is null
@@ -203,8 +211,9 @@ public class Timer {
     /**
      * Schedules the specified task for execution after the specified delay.
      *
+     * 
      * @param task  task to be scheduled.
-     * @param delay delay in milliseconds before task is to be executed.
+     * @param delay delay in milliseconds before task is to be executed. 毫秒
      * @throws IllegalArgumentException if <tt>delay</tt> is negative, or
      *         <tt>delay + System.currentTimeMillis()</tt> is negative.
      * @throws IllegalStateException if task was already scheduled or
@@ -524,21 +533,29 @@ class TimerThread extends Thread {
      * a reference to the Timer so the reference graph remains acyclic.
      * Otherwise, the Timer would never be garbage-collected and this
      * thread would never go away.
+     * 定时任务队列。
+     * 我们存这个引用优先于对Timer的引用，这样引用图就是非循环的。
+     * 如果不这样，Timer中有TimerThread的引用，TimerThread中有Timer的引用，Timer对象就永远不会被垃圾回收，这个线程就永远不会死亡。
      */
     private TaskQueue queue;
 
+    //使用TaskQueue来构造TimerThread
     TimerThread(TaskQueue queue) {
         this.queue = queue;
     }
 
     public void run() {
         try {
+        	//主循环
             mainLoop();
         } finally {
             // Someone killed this Thread, behave as if Timer cancelled
+        	// 如果有人杀死了这个线程，其表现应该像这个Timer被取消了一样
             synchronized(queue) {
                 newTasksMayBeScheduled = false;
-                queue.clear();  // Eliminate obsolete references
+                // Eliminate obsolete references
+                // 消除废除的引用
+                queue.clear();  
             }
         }
     }
@@ -553,14 +570,16 @@ class TimerThread extends Thread {
                 boolean taskFired;
                 synchronized(queue) {
                     // Wait for queue to become non-empty
+                	// 等待定时任务进入队列
                     while (queue.isEmpty() && newTasksMayBeScheduled)
                         queue.wait();
+                    //由于newTasksMayBeScheduled为false，说明不会再安排新的定时任务了，
                     if (queue.isEmpty())
                         break; // Queue is empty and will forever remain; die
 
                     // Queue nonempty; look at first evt and do the right thing
                     long currentTime, executionTime;
-                    task = queue.getMin();
+                    task = queue.getMin();//获取最近的一个任务
                     synchronized(task.lock) {
                         if (task.state == TimerTask.CANCELLED) {
                             queue.removeMin();
@@ -583,6 +602,7 @@ class TimerThread extends Thread {
                         queue.wait(executionTime - currentTime);
                 }
                 if (taskFired)  // Task fired; run it, holding no locks
+                	//运行定时任务
                     task.run();
             } catch(InterruptedException e) {
             }
@@ -640,7 +660,7 @@ class TaskQueue {
         // Grow backing store if necessary
     	// 增加队列空间，当数组满了的时候。空间增加一倍
         if (size + 1 == queue.length)
-            queue = Arrays.copyOf(queue, 2*queue.length);
+            queue = (TimerTask[]) Arrays.copyOf(queue, 2*queue.length);
 
         //增加的时候是加在末尾的，然后再用fixup来维护堆
         queue[++size] = task;
@@ -660,6 +680,7 @@ class TaskQueue {
      * Return the ith task in the priority queue, where i ranges from 1 (the
      * head task, which is returned by getMin) to the number of tasks on the
      * queue, inclusive.
+     * 获取第i个定时任务
      * 
      */
     TimerTask get(int i) {
