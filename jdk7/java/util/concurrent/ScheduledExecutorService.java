@@ -40,18 +40,23 @@ import java.util.*;
 /**
  * An {@link ExecutorService} that can schedule commands to run after a given
  * delay, or to execute periodically.
+ * ExecutorService 可以将命令推迟一段时间执行，或者按周期重复执行。
  *
  * <p> The <tt>schedule</tt> methods create tasks with various delays
  * and return a task object that can be used to cancel or check
  * execution. The <tt>scheduleAtFixedRate</tt> and
  * <tt>scheduleWithFixedDelay</tt> methods create and execute tasks
  * that run periodically until cancelled.
+ * 
+ * schedule()创建定时任务
+ * scheduleAtFixedRate()和scheduleWithFixedDelay()创建定时重复任务
  *
  * <p> Commands submitted using the {@link Executor#execute} and
  * {@link ExecutorService} <tt>submit</tt> methods are scheduled with
  * a requested delay of zero. Zero and negative delays (but not
  * periods) are also allowed in <tt>schedule</tt> methods, and are
  * treated as requests for immediate execution.
+ * 用Executor的execute()和
  *
  * <p>All <tt>schedule</tt> methods accept <em>relative</em> delays and
  * periods as arguments, not absolute times or dates. It is a simple
@@ -66,6 +71,7 @@ import java.util.*;
  *
  * The {@link Executors} class provides convenient factory methods for
  * the ScheduledExecutorService implementations provided in this package.
+ * Executors提供了方便的工厂方法来产生ScheduledExecutorService
  *
  * <h3>Usage Example</h3>
  *
