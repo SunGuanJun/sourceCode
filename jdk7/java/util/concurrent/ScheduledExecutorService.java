@@ -68,6 +68,10 @@ import java.util.*;
  * relative delay need not coincide with the current <tt>Date</tt> at
  * which the task is enabled due to network time synchronization
  * protocols, clock drift, or other factors.
+ * 所有schedule方法都能将相对延迟和周期作为参数，不是绝对时间或日期。
+ * 将绝对时间转化成这里需要的格式只是一个小问题。
+ * 比如，为了在未来一个确定的日期安排一个任务，你可以这样来调用方法，schedule(task, date.getTime()-System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+ * 
  *
  * The {@link Executors} class provides convenient factory methods for
  * the ScheduledExecutorService implementations provided in this package.
@@ -104,10 +108,14 @@ public interface ScheduledExecutorService extends ExecutorService {
     /**
      * Creates and executes a one-shot action that becomes enabled
      * after the given delay.
+     * 创建并执行一个定时任务
      *
-     * @param command the task to execute
+     * @param command the task to execute  
+     * 要执行的任务
      * @param delay the time from now to delay execution
+     * 延迟时间
      * @param unit the time unit of the delay parameter
+     * 时间单位
      * @return a ScheduledFuture representing pending completion of
      *         the task and whose <tt>get()</tt> method will return
      *         <tt>null</tt> upon completion
